@@ -4,6 +4,12 @@ import random
 import numpy as np
 import pandas as pd
 
+basic_strategy = pd.read_csv("blackjack/blackjack_basic_strategy.csv",
+                             index_col=0).astype(str)
+hard_totals = basic_strategy['4':'21']
+soft_totals = basic_strategy['A-2':'A-10']
+pair_splitting = basic_strategy['2-2':'A-A']
+
 
 class Card():
     # The suit character
@@ -95,27 +101,27 @@ class Dealer():
             for player in players:
                 player.hand.append(self.draw_card(deck))
 
-                self.hand.append(self.draw_card())
+            self.hand.append(self.draw_card())
 
 
 class Player():
-    def __init__(self, name: str, starting_cash: int, strategy, count_strategy):
+    def __init__(self, name: str, starting_cash: int, basic_strategy,
+                 count_strategy):
 
         self.name = name
         self.balance = starting_cash
-        self.strategy = pd.readcsv(
-            "blackjack_basic_strategy.csv", index_col=0).astype(str)
+        self.basic_strategy = basic_strategy
         self.count_strategy = count_strategy
+
+        self.wins = 0
+        self.losses = 0
+        self.total_rounds = self.wins + self.losses
 
         # Round relevant variables
         self.bet = 0
         self.hand = []
         self.hand_value = 0
         self.hand_decision = None
-
-        self.wins = 0
-        self.losses = 0
-        self.total_rounds = self.wins + self.losses
 
     def __repr__(self):
         return f"Player object: {self.name}, balance = {self.balance}"
@@ -132,14 +138,26 @@ class Player():
         else:
             return False
 
-    def make_decision(self, dealer_card):
+    def check_pair(self):
+        return self.hand[0].rank == self.hand[1].rank
 
+    def make_decision(self, dealer_card):
+        # Calculate hand total value
+        self.hand_total()
+
+        # Check for a blackjack
         if self.hand_value == 21:
             pass
 
-        else:
+        # surrender?
+        if self.hand_value == 16 and dealer_card.value in [9, 10, 11]:
+            return "Surrender"
+        elif self.hand_value == 15 and dealer_card.value == 10:
+            return "Surrender"
 
-            self.hand_decision = self.strategy.at[self.hand_value, dealer_card]
+        # split?
+        # double?
+        # hit or stand?
 
 
 class Rules():
@@ -196,4 +214,9 @@ def clear():
 
 
 if __name__ == '__main__':
-    pass
+
+    rules = Rules()
+    deck = Deck()
+    dealer = Dealer()
+    player = Player()
+    game = Game()
